@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run real Box-backed Eve tests
+        env:
+          BOX_API_KEY: ${{ secrets.BOX_API_KEY }}
+        run: |
+          if [ -z "$BOX_API_KEY" ]; then
+            echo "::warning::BOX_API_KEY secret not set; skipping real Box-backed Eve tests."
+            echo "These tests require a real Box API key and cannot run on fork PRs."
+            exit 0
+          fi
+          npm run test:eve-box
