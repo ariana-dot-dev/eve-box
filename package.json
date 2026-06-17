@@ -1,0 +1,54 @@
+{
+  "name": "@asciidev/eve-box",
+  "version": "0.1.0",
+  "description": "Eve sandbox backend for Ascii Box.",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist/src",
+    "dist/examples/eve",
+    "README.md",
+    "docs/eve-box-backend.md",
+    "docs/release.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test:eve-box": "npm run build && node --env-file-if-exists=.env --test dist/test/eve-box-backend.test.js",
+    "test": "npm run test:eve-box"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ariana-dot-dev/eve-box.git"
+  },
+  "homepage": "https://github.com/ariana-dot-dev/eve-box#readme",
+  "bugs": {
+    "url": "https://github.com/ariana-dot-dev/eve-box/issues"
+  },
+  "keywords": [
+    "eve",
+    "sandbox",
+    "ascii",
+    "box",
+    "agent"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "eve": "^0.11.2",
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "eve": "^0.11.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}
