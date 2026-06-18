@@ -20,7 +20,7 @@ export interface BoxClient {
   update(boxId: string, input: { name?: string; ttlSeconds?: number | null }): Promise<BoxInfo>;
   stop(boxId: string): Promise<BoxInfo | { ok: boolean }>;
   resume(boxId: string): Promise<BoxInfo | { ok: boolean }>;
-  command(boxId: string, input: { command: string; cwd?: string; timeoutMs?: number; env?: Record<string, string> }): Promise<CommandResult>;
+  command(boxId: string, input: { command: string; cwd?: string; timeoutMs?: number; env?: Record<string, string>; signal?: AbortSignal }): Promise<CommandResult>;
   readFile(boxId: string, path: string): Promise<string>;
   writeFile(boxId: string, path: string, content: string): Promise<void>;
   readFileBinary?(boxId: string, path: string): Promise<Uint8Array | null>;

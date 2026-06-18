@@ -326,11 +326,13 @@ class EveBoxSession implements SandboxSession {
   }
 
   async run(options: SandboxRunOptions): Promise<SandboxCommandResult> {
-    const commandInput: { command: string; cwd?: string; timeoutMs?: number } = { command: `${envPrefix(options.env)}${options.command}` };
+    const commandInput: { command: string; cwd?: string; timeoutMs?: number; signal?: AbortSignal } = { command: `${envPrefix(options.env)}${options.command}` };
     const cwd = toBoxCwd(options.workingDirectory);
     const timeoutMs = timeoutFromOptions(this.options, options);
     commandInput.cwd = cwd;
     if (timeoutMs !== undefined) commandInput.timeoutMs = timeoutMs;
+    // Forward the abort signal so an aborted run() rejects promptly. Box-side termination is best-effort.
+    if (options.abortSignal !== undefined) commandInput.signal = options.abortSignal;
     const result = await this.client.command(this.boxId, commandInput);
     return { exitCode: commandResultExitCode(result), stdout: result.stdout ?? "", stderr: result.stderr ?? "" } as SandboxCommandResult;
   }
@@ -345,12 +347,21 @@ class EveBoxSession implements SandboxSession {
     const workspaceRoot = `"$PWD"/${shq(BOX_WORKSPACE_DIR)}`;
     const shellPath = (path: string) => `"$workspace_root"/${shq(path)}`;
     const shellCwd = cwdRelative === "." ? `"$workspace_root"` : shellPath(cwdRelative);
+    // Path variables are assigned once (from safely-quoted values) so the TERM trap below can
+    // reference them as "$status_file" etc. without nested-quote conflicts.
     const command = [
       `workspace_root=${workspaceRoot}`,
+      `out_file=${shellPath(stdoutPath)}`,
+      `err_file=${shellPath(stderrPath)}`,
+      `status_file=${shellPath(statusPath)}`,
+      `pid_file=${shellPath(pidPath)}`,
       `mkdir -p ${shellPath(SPAWN_DIR)}`,
-      `rm -f ${shellPath(stdoutPath)} ${shellPath(stderrPath)} ${shellPath(statusPath)} ${shellPath(pidPath)}`,
-      `touch ${shellPath(stdoutPath)} ${shellPath(stderrPath)}`,
-      `( cd ${shellCwd} && ${envPrefix(options.env)}( ${options.command} ) > ${shellPath(stdoutPath)} 2> ${shellPath(stderrPath)}; code=$?; echo "$code" > ${shellPath(statusPath)} ) & echo $! | tee ${shellPath(pidPath)}`,
+      `rm -f "$out_file" "$err_file" "$status_file" "$pid_file"`,
+      `touch "$out_file" "$err_file"`,
+      // Run the command in the background inside a detached subshell so this request returns
+      // immediately (otherwise a long-running process holds the command channel open). A TERM
+      // trap writes a status on kill so wait() resolves, and tears down the child process tree.
+      `( cd ${shellCwd} || exit 1; ${envPrefix(options.env)}( ${options.command} ) > "$out_file" 2> "$err_file" & child=$!; trap 'kill -TERM $child 2>/dev/null; pkill -TERM -P $child 2>/dev/null; echo 143 > "$status_file"' TERM; wait "$child"; ec=$?; [ -f "$status_file" ] || echo "$ec" > "$status_file" ) </dev/null >/dev/null 2>&1 & echo $! | tee "$pid_file"`,
     ].join("; ");
     const started = await this.client.command(this.boxId, { command, timeoutMs: 10_000 });
     if (commandResultExitCode(started) !== 0) throw new Error(`Failed to spawn process in Box ${this.boxId}: ${started.stderr || started.stdout}`);

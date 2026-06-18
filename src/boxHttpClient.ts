@@ -101,12 +101,14 @@ export class BoxHttpClient implements BoxClient {
     return json.box ?? { ok: json.ok };
   }
 
-  async command(boxId: string, input: { command: string; cwd?: string; timeoutMs?: number; env?: Record<string, string> }): Promise<CommandResult> {
+  async command(boxId: string, input: { command: string; cwd?: string; timeoutMs?: number; env?: Record<string, string>; signal?: AbortSignal }): Promise<CommandResult> {
     const prefix = input.env && Object.keys(input.env).length
       ? Object.entries(input.env).map(([k, v]) => `export ${k}=${shq(v)}; `).join("")
       : "";
     const command = prefix ? `${prefix}${input.command}` : input.command;
-    const json = await this.request<{ result?: CommandResult; exitCode?: number; stdout?: string; stderr?: string }>(`/boxes/${encodeURIComponent(boxId)}/commands`, { method: "POST", body: JSON.stringify({ command, cwd: input.cwd, timeoutSeconds: input.timeoutMs ? Math.ceil(input.timeoutMs / 1000) : undefined }) });
+    const init: RequestInit = { method: "POST", body: JSON.stringify({ command, cwd: input.cwd, timeoutSeconds: input.timeoutMs ? Math.ceil(input.timeoutMs / 1000) : undefined }) };
+    if (input.signal) init.signal = input.signal;
+    const json = await this.request<{ result?: CommandResult; exitCode?: number; stdout?: string; stderr?: string }>(`/boxes/${encodeURIComponent(boxId)}/commands`, init);
     return json.result ?? { exitCode: json.exitCode ?? 0, stdout: json.stdout ?? "", stderr: json.stderr ?? "" };
   }
 

@@ -8,7 +8,7 @@
     "start": "tsx run.ts"
   },
   "dependencies": {
-    "@asciidev/eve-box": "^0.1.5",
+    "@asciidev/eve-box": "^0.1.6",
     "eve": "^0.11.2"
   },
   "devDependencies": {
