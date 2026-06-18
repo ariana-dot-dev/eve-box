@@ -35,11 +35,11 @@ export default defineSandbox({
 - `commandTimeoutMs` — timeout for blocking `run()` commands.
 - `networkPolicy` — see below.
 
-### Running agents for other people (important)
+### Running agents for other people
 
-By default, every box this backend creates inherits **your** Box account: your dashboard environment variables and secret files, your selected repositories (cloned in with your GitHub credentials), and your SSH identity. That is convenient for your own personal agents, but it means **anyone who can drive the agent can read your secrets and act as you on GitHub and your other boxes**.
+By default a box inherits **your** Box account (your secrets, secret files, GitHub-credentialed repos, and SSH identity) — fine for your own agents, unsafe for ones other people drive. For any multi-tenant or public agent, set `noEnv: true` so boxes get none of that and are confined to themselves.
 
-If your Eve agent is exposed to anyone but you (a multi-tenant or public agent), create boxes with `noEnv: true`. A no-env box gets none of your account secrets, files, credentials, or private repos, and is confined so it cannot act on your account or other boxes:
+A no-env box starts empty, so you give it exactly what it needs — secrets through `env`, files and setup through Eve's `onSession` hook:
 
 ```ts
 import { defineSandbox } from "eve/sandbox";
@@ -48,14 +48,21 @@ import { asciiBox } from "@asciidev/eve-box";
 export default defineSandbox({
   backend: asciiBox({
     apiKey: process.env.BOX_API_KEY!,
-    noEnv: true, // hand boxes to untrusted users safely
-    // Give boxes only the secrets they actually need:
+    noEnv: true,
+    // Scoped secrets — the only env this box gets:
     env: { MY_APP_TOKEN: process.env.MY_APP_TOKEN! },
   }),
+  async onSession({ use }) {
+    const sandbox = await use();
+    // Seed files and run setup with the session API. These wrap Box's
+    // file and command APIs, so you don't need `box scp` or `box ssh`.
+    await sandbox.writeTextFile({ path: "config/app.json", content: JSON.stringify({ mode: "prod" }) });
+    await sandbox.run({ command: "git clone https://github.com/acme/public-repo . && npm ci" });
+  },
 });
 ```
 
-`env` injects per-box environment variables (merged over account variables, per-box wins; ≤100 vars, 64KB total; reserved Box-internal names are rejected). With `noEnv: true` it is the only way to give boxes a secret. A no-env box can still SSH, stream a desktop, snapshot, and expose public URLs; it just can't reach private repos — clone public ones, or have the user sign in with their own credentials inside the box.
+`env` keys merge over account variables (per-box wins; ≤100 vars, 64KB total; reserved Box-internal names rejected). `writeFile`/`readFile` move bytes in and out and `run`/`spawn` execute commands — the Eve-native equivalents of `box scp` and `box ssh <id> <cmd>`. A no-env box can't reach your private repos, so clone public ones or have the user authenticate inside the box.
 
 ### Network policies
 

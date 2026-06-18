@@ -51,22 +51,29 @@ export default defineSandbox({
 
 ## Boxes for other people: `noEnv` and `env`
 
-By default a box inherits the creating account: dashboard environment variables and secret files, selected repositories cloned in with the account's GitHub credentials, and the account SSH identity. This is right for your own personal agents but unsafe for agents other people drive — they would inherit your secrets and could act as you.
+By default a box inherits the creating account (secrets, secret files, GitHub-credentialed repos, SSH identity) — right for your own agents, unsafe for agents other people drive. For any multi-tenant or public agent, set `noEnv: true`: the box gets none of that and is confined to itself. Forks of a no-env box are always no-env.
 
-For any multi-tenant or public agent, create boxes with `noEnv: true`:
+A no-env box starts empty, so you provision exactly what it needs — secrets through `env`, files and setup through Eve's `onSession` (or `bootstrap` for templates):
 
 ```ts
 export default defineSandbox({
   backend: asciiBox({
     apiKey: process.env.BOX_API_KEY!,
     noEnv: true,
-    env: { MY_APP_TOKEN: process.env.MY_APP_TOKEN! }, // optional, scoped per box
+    env: { MY_APP_TOKEN: process.env.MY_APP_TOKEN! }, // scoped secrets, the only env this box gets
   }),
+  async onSession({ use }) {
+    const sandbox = await use();
+    // The session API wraps Box's file and command APIs, so no `box scp` / `box ssh` is needed.
+    await sandbox.writeTextFile({ path: "config/app.json", content: JSON.stringify({ mode: "prod" }) });
+    await sandbox.run({ command: "git clone https://github.com/acme/public-repo . && npm ci" });
+  },
 });
 ```
 
-- `noEnv: true` — boxes get none of your account secrets, files, credentials, or private repos, and are confined so they cannot act on your account or other boxes. SSH, desktop, snapshots, and public URLs still work. Forks of a no-env box are always no-env.
-- `env` — per-box environment variables injected into every box Eve creates, merged over account variables (per-box wins). At most 100 variables, 64KB total; reserved Box-internal names are rejected. With `noEnv: true` this is the only way to give boxes a secret.
+- `env` — per-box variables, merged over account variables (per-box wins). At most 100 variables, 64KB total; reserved Box-internal names are rejected. With `noEnv: true` this is the only way to give a box a secret.
+- Use `writeFile`/`writeTextFile`/`writeBinaryFile` and `readFile` to move files in and out, and `run`/`spawn` to execute — the Eve-native equivalents of `box scp` and `box ssh <id> <cmd>`.
+- A no-env box can't reach your private repos; clone public ones or have the user authenticate inside the box.
 
 ## Current gaps
 
