@@ -1,6 +1,8 @@
 # @asciidev/eve-box
 
-Eve sandbox backend for [Ascii Box](https://ascii.dev). Run your Eve sandboxes on Box — the backend maps Eve's filesystem and process operations onto the Box API.
+Eve sandbox backend for [Ascii Box](https://box.ascii.dev). Run your Eve sandboxes on Box — the backend maps Eve's filesystem and process operations onto the Box API.
+
+New to Eve or Box? The **[zero-to-one guide](https://docs.ascii.dev/box/integrations/eve)** walks through the whole setup from scratch.
 
 ## Install
 
@@ -37,7 +39,8 @@ Box does not yet support Eve's fine-grained network policies. The backend accept
 
 ## Documentation
 
-See [`docs/eve-box-backend.md`](./docs/eve-box-backend.md) for the full capability mapping and current limitations.
+- **[Eve on Box guide](https://docs.ascii.dev/box/integrations/eve)** — a self-contained, zero-to-one walkthrough.
+- [`docs/eve-box-backend.md`](./docs/eve-box-backend.md) — full capability mapping and current limitations.
 
 ## Development
 
