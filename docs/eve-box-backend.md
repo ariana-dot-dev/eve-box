@@ -51,9 +51,9 @@ export default defineSandbox({
 
 ## Current gaps
 
-Ascii Box currently does not expose Eve's firewall/credential-brokering network policy API. The adapter accepts `"allow-all"` as a no-op and throws `EveBoxUnsupportedError` for `"deny-all"`, allow-lists, subnet rules, or credential transforms so applications do not get a false sense of isolation.
+Ascii Box does not expose Eve's fine-grained network policies. The backend accepts `"allow-all"` and throws `EveBoxUnsupportedError` for stricter policies (`"deny-all"`, allow-lists, subnet rules) so applications do not get a false sense of isolation.
 
-Box also does not expose cloneable Eve template snapshots. `prewarm()` records seed files and bootstrap code in-process, then replays them when a new session Box is created. This supports local/dev usage, but production releases that require build-time template materialization should avoid `bootstrap`/seed files with this backend until Box exposes snapshot cloning.
+Template prewarming replays your seed files and bootstrap code when each session's box is created, rather than cloning a prebuilt snapshot. If you want fast clones of a fully prepared environment, fork a box directly with the Box API: set it up, stop it so its snapshot completes, then fork it — the clone keeps the whole filesystem.
 
 ## Tests
 
