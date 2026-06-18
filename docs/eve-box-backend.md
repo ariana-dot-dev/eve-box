@@ -55,26 +55,16 @@ Ascii Box currently does not expose Eve's firewall/credential-brokering network 
 
 Box also does not expose cloneable Eve template snapshots. `prewarm()` records seed files and bootstrap code in-process, then replays them when a new session Box is created. This supports local/dev usage, but production releases that require build-time template materialization should avoid `bootstrap`/seed files with this backend until Box exposes snapshot cloning.
 
-## Real API tests
+## Tests
 
-The only Eve correctness tests in this package are in [`test/eve-box-backend.test.ts`](../test/eve-box-backend.test.ts). They intentionally use the real Box API and require `BOX_API_KEY`. No fake Box client, mocks, stubs, dry-runs, or per-test Boxes are used in these Eve adapter tests.
-
-The test process creates one shared Box with `ttlSeconds: 300` (five minutes), then reuses that same Box for every Eve adapter assertion in the file.
+The test suite runs against a live Box and requires `BOX_API_KEY`:
 
 ```bash
-BOX_API_KEY=box_... npm run test:eve-box
+cp .env.example .env   # add your BOX_API_KEY
+npm test
 ```
 
-Assertions covered by `test/eve-box-backend.test.ts`:
-
-- real `asciiBox` sessions run commands and resolve `/workspace` paths;
-- real `asciiBox` sessions read, write, slice, and remove text and binary files;
-- real `asciiBox` `spawn()` streams stdout/stderr, waits, and reports exit code;
-- real `asciiBox` reconnects to the same Box metadata and preserves workspace files;
-- real `asciiBox` rejects unsupported Eve network policies with `EveBoxUnsupportedError`;
-- `BoxHttpClient` talks to the same real Box API used by the adapter.
-
-The implementation was aligned with the current Box docs index (`https://docs.ascii.dev/llms.txt`), the TypeScript SDK guide, and the Box v1 create/command/file endpoint references.
+It covers command execution and `/workspace` path resolution, text/binary file read/write/slice/remove, `spawn()` streaming and exit codes, reconnecting to an existing box, and network-policy handling.
 
 ## Publishing
 

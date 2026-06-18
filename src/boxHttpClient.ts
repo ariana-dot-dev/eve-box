@@ -18,12 +18,7 @@ function shq(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
-/**
- * HTTP client for the Box public API v1. Box is used strictly as a runtime
- * substrate: boxes are created/resumed/stopped and commands/files run inside
- * them. This client intentionally exposes NO method to call Box's built-in
- * `/prompt` agent — the acting agents are the developer's own harnesses.
- */
+/** HTTP client for the Box public API v1. */
 export class BoxHttpClient implements BoxClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
@@ -136,20 +131,4 @@ export class BoxHttpClient implements BoxClient {
   async writeFileBinary(boxId: string, path: string, content: Uint8Array): Promise<void> {
     await this.request(`/boxes/${encodeURIComponent(boxId)}/files`, { method: "PUT", body: JSON.stringify({ path, content: Buffer.from(content).toString("base64"), encoding: "base64" }) });
   }
-}
-
-/**
- * Wraps a BoxClient so any attempt to reach Box's built-in agent throws. Used as
- * runtime, auditable proof that this framework never delegates the agent loop to
- * Box's embedded default agent/prompt.
- */
-export function assertNoBoxAgent<T extends BoxClient>(box: T): T {
-  return new Proxy(box, {
-    get(target, prop, receiver) {
-      if (prop === "prompt" || prop === "events" || prop === "chat" || prop === "agent") {
-        throw new Error(`Box built-in agent is disabled: '${String(prop)}' is forbidden. ConsumerBoxAgents only uses external harnesses via command/readFile/writeFile.`);
-      }
-      return Reflect.get(target, prop, receiver);
-    },
-  });
 }

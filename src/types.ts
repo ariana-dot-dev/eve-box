@@ -12,11 +12,7 @@ export interface CommandResult {
   stderr: string;
 }
 
-/**
- * Box is used purely as a runtime/substrate: create/resume/stop boxes and run
- * commands + read/write files inside them. The adapter never calls Box's
- * built-in prompt/agent endpoint; Eve actions are mapped to commands and files.
- */
+/** Minimal client over the Box API: manage boxes and run commands / read-write files inside them. */
 export interface BoxClient {
   create(input: { name?: string; ttlSeconds?: number | null }): Promise<BoxInfo>;
   list?(): Promise<BoxInfo[]>;

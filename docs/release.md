@@ -48,8 +48,6 @@ Notes:
 
 - Keep the package name exactly `@asciidev/eve-box` (all lowercase), matching npm scoped-package rules and the `package.json` name.
 - The first publish of a scoped package must include `--access public`; `publishConfig.access` is also set to `public` as a safeguard.
-- The Eve correctness step is only `npm run test:eve-box` with a real `BOX_API_KEY`. Do not present `npm pack --dry-run`, `npm publish --dry-run`, or any generic test command as Eve correctness evidence.
-- The Eve adapter tests are `test/eve-box-backend.test.ts`; they require `BOX_API_KEY`, create one shared Box with `ttlSeconds: 300`, and use no fake Box client, mocks, stubs, or dry-run path.
+- The test suite (`npm test`) runs against a live Box and requires a real `BOX_API_KEY`.
 - Never commit a real `BOX_API_KEY`. Keep it in a git-ignored `.env` or your shell environment only.
-- Do not rotate secrets, change live infrastructure, or run live migrations as part of the release.
 - If `npm view @asciidev/eve-box version` returns a version before the first publish, choose a new unpublished semver version in `package.json` before publishing.

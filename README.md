@@ -1,10 +1,14 @@
 # @asciidev/eve-box
 
-Eve sandbox backend for [Ascii Box](https://ascii.dev). It exports an Eve `SandboxBackend` that runs Eve sandboxes on Box, mapping Eve's filesystem and process operations onto the Box public v1 API.
+Eve sandbox backend for [Ascii Box](https://ascii.dev). Run your Eve sandboxes on Box — the backend maps Eve's filesystem and process operations onto the Box API.
+
+## Install
 
 ```bash
 npm install @asciidev/eve-box eve
 ```
+
+## Usage
 
 ```ts
 import { defineSandbox } from "eve/sandbox";
@@ -15,26 +19,33 @@ export default defineSandbox({
 });
 ```
 
-Box is used purely as a runtime substrate: the adapter creates/resumes boxes and runs commands and reads/writes files inside them. It never calls Box's built-in agent/prompt endpoint — your own Eve harness is the acting agent.
+### Options
 
-## Real Eve correctness tests
+`asciiBox(options)` accepts:
 
-The only tests that establish Eve adapter correctness are in [`test/eve-box-backend.test.ts`](./test/eve-box-backend.test.ts).
+- `apiKey` — Box API key. Defaults to `process.env.BOX_API_KEY`.
+- `baseUrl` — Box API base URL. Defaults to the public Box API.
+- `name` — name (or `(input) => string`) for boxes Eve creates.
+- `ttlSeconds` — auto-archive TTL for boxes. Defaults to `3600`.
+- `pollMs` — poll cadence for `spawn()` streams and `wait()`.
+- `commandTimeoutMs` — timeout for blocking `run()` commands.
+- `networkPolicy` — see below.
 
-They require a real `BOX_API_KEY`. They do not use a fake Box client, mocks, stubs, dry-runs, or per-test Boxes. The test process creates one shared Box with `ttlSeconds: 300` and reuses that Box across every Eve adapter assertion in the file.
+### Network policies
 
-```bash
-npm install
-# Put your key in a local .env (BOX_API_KEY=box_...) — it is git-ignored — or export it:
-BOX_API_KEY=box_... npm run test:eve-box
-```
-
-The test runner uses Node's `--env-file-if-exists=.env`, so a local `.env` is picked up automatically and an ambient `BOX_API_KEY` works in CI without one. Copy [`.env.example`](./.env.example) to `.env` to get started.
+Box does not yet support Eve's fine-grained network policies. The backend accepts `"allow-all"` and throws `EveBoxUnsupportedError` for stricter policies, so you don't get a false sense of isolation. Use Eve's Vercel or microsandbox backends if you need firewall-backed policies.
 
 ## Documentation
 
-- [`docs/eve-box-backend.md`](./docs/eve-box-backend.md) — capability mapping and test coverage.
-- [`docs/release.md`](./docs/release.md) — first public npm release steps.
+See [`docs/eve-box-backend.md`](./docs/eve-box-backend.md) for the full capability mapping and current limitations.
+
+## Development
+
+```bash
+npm install
+cp .env.example .env   # add your BOX_API_KEY
+npm test
+```
 
 ## License
 
