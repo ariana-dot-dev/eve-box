@@ -39,6 +39,21 @@ export interface EveBoxBackendOptions {
   name?: string | ((input: SandboxBackendCreateInput) => string);
   /** Auto-archive TTL for Eve boxes. `null` disables auto-stop when the API supports it. */
   ttlSeconds?: number | null;
+  /**
+   * Create boxes with NONE of your Box account's secrets, secret files, GitHub
+   * credentials, SSH identity, or selected repos, confined so they cannot act on
+   * your account or other boxes. Use this for any Eve agent driven by people other
+   * than you (multi-tenant or public agents). Pair with `env` to give boxes their
+   * own scoped secrets. Defaults to `false` (boxes inherit your account, for personal use).
+   */
+  noEnv?: boolean;
+  /**
+   * Per-box environment variables injected into every box Eve creates, merged over
+   * your account variables (per-box values win). At most 100 variables, 64KB total;
+   * reserved Box-internal names are rejected. With `noEnv: true` this is the only way
+   * to give boxes secrets.
+   */
+  env?: Record<string, string>;
   /** Poll cadence for `spawn().wait()` and stream tails. */
   pollMs?: number;
   /** Box command timeout for blocking `run()`. The Box v1 API currently caps this at 60 seconds. */
@@ -473,7 +488,10 @@ export function asciiBox(options: EveBoxBackendOptions = {}): SandboxBackend<Eve
         const name = typeof options.name === "function"
           ? options.name(input)
           : options.name ?? `eve-${input.sessionKey}`;
-        box = await client.create({ name, ttlSeconds: options.ttlSeconds ?? 3600 });
+        const createInput: { name?: string; ttlSeconds?: number | null; env?: Record<string, string>; noEnv?: boolean } = { name, ttlSeconds: options.ttlSeconds ?? 3600 };
+        if (options.env !== undefined) createInput.env = options.env;
+        if (options.noEnv !== undefined) createInput.noEnv = options.noEnv;
+        box = await client.create(createInput);
       }
       box = await waitForReady(client, box);
       await ensureEveWorkspace(client, box.id);

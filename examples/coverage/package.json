@@ -1,0 +1,19 @@
+{
+  "name": "eve-box-coverage-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "End-to-end coverage of every documented Eve sandbox use case, backed by a real Ascii Box using the published @asciidev/eve-box.",
+  "scripts": {
+    "start": "tsx run.ts"
+  },
+  "dependencies": {
+    "@asciidev/eve-box": "^0.1.4",
+    "eve": "^0.11.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  }
+}

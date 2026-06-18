@@ -14,7 +14,7 @@ export interface CommandResult {
 
 /** Minimal client over the Box API: manage boxes and run commands / read-write files inside them. */
 export interface BoxClient {
-  create(input: { name?: string; ttlSeconds?: number | null }): Promise<BoxInfo>;
+  create(input: { name?: string; ttlSeconds?: number | null; env?: Record<string, string>; noEnv?: boolean }): Promise<BoxInfo>;
   list?(): Promise<BoxInfo[]>;
   get(boxId: string): Promise<BoxInfo>;
   update(boxId: string, input: { name?: string; ttlSeconds?: number | null }): Promise<BoxInfo>;

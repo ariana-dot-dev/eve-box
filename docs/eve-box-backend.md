@@ -49,6 +49,25 @@ export default defineSandbox({
 - `removePath`: maps to `rm` inside the Box workspace.
 - `resolvePath`: anchors relative paths to `/workspace`, matching Eve's sandbox contract.
 
+## Boxes for other people: `noEnv` and `env`
+
+By default a box inherits the creating account: dashboard environment variables and secret files, selected repositories cloned in with the account's GitHub credentials, and the account SSH identity. This is right for your own personal agents but unsafe for agents other people drive — they would inherit your secrets and could act as you.
+
+For any multi-tenant or public agent, create boxes with `noEnv: true`:
+
+```ts
+export default defineSandbox({
+  backend: asciiBox({
+    apiKey: process.env.BOX_API_KEY!,
+    noEnv: true,
+    env: { MY_APP_TOKEN: process.env.MY_APP_TOKEN! }, // optional, scoped per box
+  }),
+});
+```
+
+- `noEnv: true` — boxes get none of your account secrets, files, credentials, or private repos, and are confined so they cannot act on your account or other boxes. SSH, desktop, snapshots, and public URLs still work. Forks of a no-env box are always no-env.
+- `env` — per-box environment variables injected into every box Eve creates, merged over account variables (per-box wins). At most 100 variables, 64KB total; reserved Box-internal names are rejected. With `noEnv: true` this is the only way to give boxes a secret.
+
 ## Current gaps
 
 Ascii Box does not expose Eve's fine-grained network policies. The backend accepts `"allow-all"` and throws `EveBoxUnsupportedError` for stricter policies (`"deny-all"`, allow-lists, subnet rules) so applications do not get a false sense of isolation.

@@ -64,9 +64,11 @@ export class BoxHttpClient implements BoxClient {
     return json as T;
   }
 
-  async create(input: { name?: string; ttlSeconds?: number | null }): Promise<BoxInfo> {
+  async create(input: { name?: string; ttlSeconds?: number | null; env?: Record<string, string>; noEnv?: boolean }): Promise<BoxInfo> {
     const body: Record<string, unknown> = {};
     if (input.ttlSeconds !== undefined) body.ttlSeconds = input.ttlSeconds;
+    if (input.env !== undefined) body.env = input.env;
+    if (input.noEnv !== undefined) body.noEnv = input.noEnv;
     const json = await this.request<{ box: BoxInfo }>("/boxes", { method: "POST", body: JSON.stringify(body) });
     if (input.name) {
       const update: { name?: string; ttlSeconds?: number | null } = { name: input.name };
