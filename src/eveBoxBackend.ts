@@ -40,6 +40,12 @@ export interface EveBoxBackendOptions {
   /** Auto-archive TTL for Eve boxes. `null` disables auto-stop when the API supports it. */
   ttlSeconds?: number | null;
   /**
+   * Source Box id to fork for each new Eve session instead of creating a blank Box.
+   * Prepare that Box once, stop it so `snapshotAvailable` is true, then set this id
+   * so every Eve session starts from an independent clone of the prepared filesystem.
+   */
+  forkFromBoxId?: string | ((input: SandboxBackendCreateInput) => string | undefined);
+  /**
    * Create boxes with NONE of your Box account's secrets, secret files, GitHub
    * credentials, SSH identity, or selected repos, confined so they cannot act on
    * your account or other boxes. Use this for any Eve agent driven by people other
@@ -140,6 +146,14 @@ function dirname(path: string): string {
 function envPrefix(env?: Record<string, string>): string {
   if (!env || Object.keys(env).length === 0) return "";
   return Object.entries(env).map(([key, value]) => `export ${key}=${shq(value)}; `).join("");
+}
+
+function forkSourceFromOptions(options: EveBoxBackendOptions, input: SandboxBackendCreateInput): string | undefined {
+  return typeof options.forkFromBoxId === "function" ? options.forkFromBoxId(input) : options.forkFromBoxId;
+}
+
+function boxIdFromActionResult(result: BoxInfo | { id?: string; ok: boolean }): string | undefined {
+  return "state" in result ? result.id : result.id;
 }
 
 function timeoutFromOptions(options: EveBoxBackendOptions, runOptions?: SandboxRunOptions): number | undefined {
@@ -499,10 +513,24 @@ export function asciiBox(options: EveBoxBackendOptions = {}): SandboxBackend<Eve
         const name = typeof options.name === "function"
           ? options.name(input)
           : options.name ?? `eve-${input.sessionKey}`;
-        const createInput: { name?: string; ttlSeconds?: number | null; env?: Record<string, string>; noEnv?: boolean } = { name, ttlSeconds: options.ttlSeconds ?? 3600 };
-        if (options.env !== undefined) createInput.env = options.env;
-        if (options.noEnv !== undefined) createInput.noEnv = options.noEnv;
-        box = await client.create(createInput);
+        const ttlSeconds = options.ttlSeconds ?? 3600;
+        const forkFromBoxId = forkSourceFromOptions(options, input);
+        if (forkFromBoxId) {
+          if (!client.fork) throw new EveBoxUnsupportedError("forkFromBoxId", "the configured Box client does not implement fork()");
+          const forkInput: { env?: Record<string, string>; noEnv?: boolean } = {};
+          if (options.env !== undefined) forkInput.env = options.env;
+          if (options.noEnv !== undefined) forkInput.noEnv = options.noEnv;
+          const forked = await client.fork(forkFromBoxId, forkInput);
+          const forkedBoxId = boxIdFromActionResult(forked);
+          if (!forkedBoxId) throw new Error(`Box fork from ${forkFromBoxId} did not return a new box id`);
+          box = "state" in forked ? forked : await client.get(forkedBoxId);
+          box = await client.update(box.id, { name, ttlSeconds });
+        } else {
+          const createInput: { name?: string; ttlSeconds?: number | null; env?: Record<string, string>; noEnv?: boolean } = { name, ttlSeconds };
+          if (options.env !== undefined) createInput.env = options.env;
+          if (options.noEnv !== undefined) createInput.noEnv = options.noEnv;
+          box = await client.create(createInput);
+        }
       }
       box = await waitForReady(client, box);
       await ensureEveWorkspace(client, box.id);
