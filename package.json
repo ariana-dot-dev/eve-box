@@ -1,6 +1,6 @@
 {
   "name": "@asciidev/eve-box",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Eve sandbox backend for Ascii Box.",
   "type": "module",
   "main": "./dist/src/index.js",

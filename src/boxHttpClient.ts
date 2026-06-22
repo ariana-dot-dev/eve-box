@@ -78,6 +78,14 @@ export class BoxHttpClient implements BoxClient {
     return json.box;
   }
 
+  async fork(boxId: string, input: { env?: Record<string, string>; noEnv?: boolean } = {}): Promise<BoxInfo | { id?: string; ok: boolean }> {
+    const body: Record<string, unknown> = {};
+    if (input.env !== undefined) body.env = input.env;
+    if (input.noEnv !== undefined) body.noEnv = input.noEnv;
+    const json = await this.request<{ box?: BoxInfo; id?: string; ok: boolean }>(`/boxes/${encodeURIComponent(boxId)}/fork`, { method: "POST", body: JSON.stringify(body) });
+    return json.box ?? (json.id === undefined ? { ok: json.ok } : { id: json.id, ok: json.ok });
+  }
+
   async list(): Promise<BoxInfo[]> {
     const json = await this.request<{ boxes?: BoxInfo[] }>("/boxes");
     return json.boxes ?? [];

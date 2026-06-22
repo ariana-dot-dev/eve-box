@@ -15,6 +15,8 @@ export interface CommandResult {
 /** Minimal client over the Box API: manage boxes and run commands / read-write files inside them. */
 export interface BoxClient {
   create(input: { name?: string; ttlSeconds?: number | null; env?: Record<string, string>; noEnv?: boolean }): Promise<BoxInfo>;
+  /** Fork an existing archived/snapshotted Box into a new independent Box. */
+  fork?(boxId: string, input?: { env?: Record<string, string>; noEnv?: boolean }): Promise<BoxInfo | { id?: string; ok: boolean }>;
   list?(): Promise<BoxInfo[]>;
   get(boxId: string): Promise<BoxInfo>;
   update(boxId: string, input: { name?: string; ttlSeconds?: number | null }): Promise<BoxInfo>;

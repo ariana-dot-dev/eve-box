@@ -29,6 +29,7 @@ export default defineSandbox({
 - `baseUrl` — Box API base URL. Defaults to the public Box API.
 - `name` — name (or `(input) => string`) for boxes Eve creates.
 - `ttlSeconds` — auto-archive TTL for boxes. Defaults to `3600`.
+- `forkFromBoxId` — source Box id to fork for each new Eve session. Prepare the source once, stop it so its snapshot completes, then every session starts from an independent clone.
 - `noEnv` — withhold your Box account's secrets and credentials from every box (see below). Defaults to `false`.
 - `env` — per-box environment variables for every box Eve creates (see below).
 - `pollMs` — poll cadence for `spawn()` streams and `wait()`.
@@ -63,6 +64,28 @@ export default defineSandbox({
 ```
 
 `env` keys merge over account variables (per-box wins; ≤100 vars, 64KB total; reserved Box-internal names rejected). `writeFile`/`readFile` move bytes in and out and `run`/`spawn` execute commands — the Eve-native equivalents of `box scp` and `box ssh <id> <cmd>`. A no-env box can't reach your private repos, so clone public ones or have the user authenticate inside the box.
+
+### Reusing a prepared Box snapshot
+
+For faster startup across many Eve sessions, prepare one Box by installing dependencies or cloning repositories, then stop it so Box creates a snapshot. Pass that source Box id as `forkFromBoxId`; each new Eve session forks a fresh independent Box from the snapshot and then reconnects Eve to `/workspace`.
+
+```ts
+import { defineSandbox } from "eve/sandbox";
+import { asciiBox } from "@asciidev/eve-box";
+
+export default defineSandbox({
+  backend: asciiBox({
+    apiKey: process.env.BOX_API_KEY!,
+    forkFromBoxId: process.env.EVE_BOX_TEMPLATE_ID!,
+    name: ({ sessionKey }) => `eve-${sessionKey}`,
+    ttlSeconds: 1800,
+    noEnv: true,
+    env: { MY_APP_TOKEN: process.env.MY_APP_TOKEN! },
+  }),
+});
+```
+
+The source Box must have a completed snapshot (`snapshotAvailable: true`). Forking copies the filesystem, not running processes, so start app servers or workers again in Eve setup if you need them.
 
 ### Network policies
 
