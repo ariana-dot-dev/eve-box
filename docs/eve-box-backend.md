@@ -44,7 +44,7 @@ export default defineSandbox({
 
 - `create`/resume: creates a Boat sandbox through the v1 API, or reconnects to `metadata.boxId` from Eve's persisted session state.
 - `create` uses Boat v1 `ttlSeconds`; set `ttlSeconds: 300` for five-minute test sandboxes or your desired app retention window.
-- `run`: maps to `POST /sandboxes/{sandboxId}/commands` with `cwd` as a relative path inside the sandbox work directory, per the current Boat API.
+- `run`: maps to `POST /boxes/{boxId}/commands` on the legacy `ascii.dev/api/box/v1` base this package still calls (`/sandboxes/{sandboxId}/commands` on `boat.dev/api/v1` is the same route), with `cwd` as a relative path inside the sandbox work directory.
 - `spawn`: starts a background shell process in the sandbox and exposes `stdout`, `stderr`, `wait()`, and `kill()` by polling files in `.eve-spawn/`.
 - `readTextFile`/`writeTextFile`: map Eve `/workspace/...` paths to Boat file API paths relative to the sandbox work directory (`workspace/...`).
 - `readBinaryFile`/`writeBinaryFile`: use Boat `base64` file encoding via the current Boat v1 API when the client provides binary methods; otherwise fall back to UTF-8.
