@@ -20,9 +20,9 @@ npm ping
 # 3. Install exactly from the lockfile.
 npm ci
 
-# 4. Run the real Box-backed Eve adapter tests.
-# Use a real key from the Box dashboard/API keys tab.
-# These are the Eve correctness tests; they require BOX_API_KEY and use one shared Box with ttlSeconds=300.
+# 4. Run the real Boat-backed Eve adapter tests.
+# Use a real key from the Boat dashboard/API keys tab.
+# These are the Eve correctness tests; they require BOX_API_KEY and use one shared sandbox with ttlSeconds=300.
 export BOX_API_KEY=box_your_real_key_here
 npm run test:eve-box
 
@@ -48,6 +48,6 @@ Notes:
 
 - Keep the package name exactly `@asciidev/eve-box` (all lowercase), matching npm scoped-package rules and the `package.json` name.
 - The first publish of a scoped package must include `--access public`; `publishConfig.access` is also set to `public` as a safeguard.
-- The test suite (`npm test`) runs against a live Box and requires a real `BOX_API_KEY`.
+- The test suite (`npm test`) runs against a live Boat sandbox and requires a real `BOX_API_KEY`.
 - Never commit a real `BOX_API_KEY`. Keep it in a git-ignored `.env` or your shell environment only.
 - If `npm view @asciidev/eve-box version` returns a version before the first publish, choose a new unpublished semver version in `package.json` before publishing.

@@ -1,6 +1,8 @@
-# Eve sandbox backend for Ascii Box
+# Eve sandbox backend for Boat
 
-`@asciidev/eve-box` exports an Eve `SandboxBackend` factory for running Eve sandboxes on Ascii Box (`box.ascii.dev` / the Box public API).
+Box is now Boat (boat.dev). Package names are unchanged.
+
+`@asciidev/eve-box` exports an Eve `SandboxBackend` factory for running Eve sandboxes on Boat (`boat.dev` / the Boat public API).
 
 Install from npm:
 
@@ -40,57 +42,57 @@ export default defineSandbox({
 
 ## Capability mapping
 
-- `create`/resume: creates a Box through the v1 API, or reconnects to `metadata.boxId` from Eve's persisted session state.
-- `create` uses Box v1 `ttlSeconds`; set `ttlSeconds: 300` for five-minute test boxes or your desired app retention window.
-- `run`: maps to `POST /boxes/{boxId}/commands` with `cwd` as a relative path inside the Box work directory, per the current Box API.
-- `spawn`: starts a background shell process in the Box and exposes `stdout`, `stderr`, `wait()`, and `kill()` by polling files in `.eve-spawn/`.
-- `readTextFile`/`writeTextFile`: map Eve `/workspace/...` paths to Box file API paths relative to the Box work directory (`workspace/...`).
-- `readBinaryFile`/`writeBinaryFile`: use Box `base64` file encoding via the current Box v1 API when the client provides binary methods; otherwise fall back to UTF-8.
-- `removePath`: maps to `rm` inside the Box workspace.
+- `create`/resume: creates a Boat sandbox through the v1 API, or reconnects to `metadata.boxId` from Eve's persisted session state.
+- `create` uses Boat v1 `ttlSeconds`; set `ttlSeconds: 300` for five-minute test sandboxes or your desired app retention window.
+- `run`: maps to `POST /sandboxes/{sandboxId}/commands` with `cwd` as a relative path inside the sandbox work directory, per the current Boat API.
+- `spawn`: starts a background shell process in the sandbox and exposes `stdout`, `stderr`, `wait()`, and `kill()` by polling files in `.eve-spawn/`.
+- `readTextFile`/`writeTextFile`: map Eve `/workspace/...` paths to Boat file API paths relative to the sandbox work directory (`workspace/...`).
+- `readBinaryFile`/`writeBinaryFile`: use Boat `base64` file encoding via the current Boat v1 API when the client provides binary methods; otherwise fall back to UTF-8.
+- `removePath`: maps to `rm` inside the sandbox workspace.
 - `resolvePath`: anchors relative paths to `/workspace`, matching Eve's sandbox contract.
 
-## Boxes for other people: `noEnv` and `env`
+## Sandboxes for other people: `noEnv` and `env`
 
-By default a box inherits the creating account (secrets, secret files, GitHub-credentialed repos, SSH identity) — right for your own agents, unsafe for agents other people drive. For any multi-tenant or public agent, set `noEnv: true`: the box gets none of that and is confined to itself. Forks of a no-env box are always no-env.
+By default a sandbox inherits the creating account (secrets, secret files, GitHub-credentialed repos, SSH identity). That is right for your own agents, unsafe for agents other people drive. For any multi-tenant or public agent, set `noEnv: true`: the sandbox gets none of that and is confined to itself. Forks of a no-env sandbox are always no-env.
 
-A no-env box starts empty, so you provision exactly what it needs — secrets through `env`, files and setup through Eve's `onSession` (or `bootstrap` for templates):
+A no-env sandbox starts empty, so you provision exactly what it needs: secrets through `env`, files and setup through Eve's `onSession` (or `bootstrap` for templates):
 
 ```ts
 export default defineSandbox({
   backend: asciiBox({
     apiKey: process.env.BOX_API_KEY!,
     noEnv: true,
-    env: { MY_APP_TOKEN: process.env.MY_APP_TOKEN! }, // scoped secrets, the only env this box gets
+    env: { MY_APP_TOKEN: process.env.MY_APP_TOKEN! }, // scoped secrets, the only env this sandbox gets
   }),
   async onSession({ use }) {
     const sandbox = await use();
-    // The session API wraps Box's file and command APIs, so no `box scp` / `box ssh` is needed.
+    // The session API wraps Boat's file and command APIs, so no `boat scp` / `boat ssh` is needed.
     await sandbox.writeTextFile({ path: "config/app.json", content: JSON.stringify({ mode: "prod" }) });
     await sandbox.run({ command: "git clone https://github.com/acme/public-repo . && npm ci" });
   },
 });
 ```
 
-- `env` — per-box variables, merged over account variables (per-box wins). At most 100 variables, 64KB total; reserved Box-internal names are rejected. With `noEnv: true` this is the only way to give a box a secret.
-- Use `writeFile`/`writeTextFile`/`writeBinaryFile` and `readFile` to move files in and out, and `run`/`spawn` to execute — the Eve-native equivalents of `box scp` and `box ssh <id> <cmd>`.
-- A no-env box can't reach your private repos; clone public ones or have the user authenticate inside the box.
+- `env`: per-sandbox variables, merged over account variables (per-sandbox wins). At most 100 variables, 64KB total; reserved Boat-internal names are rejected. With `noEnv: true` this is the only way to give a sandbox a secret.
+- Use `writeFile`/`writeTextFile`/`writeBinaryFile` and `readFile` to move files in and out, and `run`/`spawn` to execute, the Eve-native equivalents of `boat scp` and `boat ssh <id> <cmd>`.
+- A no-env sandbox can't reach your private repos; clone public ones or have the user authenticate inside the sandbox.
 
 ## Current gaps
 
-Ascii Box does not expose Eve's fine-grained network policies. The backend accepts `"allow-all"` and throws `EveBoxUnsupportedError` for stricter policies (`"deny-all"`, allow-lists, subnet rules) so applications do not get a false sense of isolation.
+Boat does not expose Eve's fine-grained network policies. The backend accepts `"allow-all"` and throws `EveBoxUnsupportedError` for stricter policies (`"deny-all"`, allow-lists, subnet rules) so applications do not get a false sense of isolation.
 
-Template prewarming replays your seed files and bootstrap code when each session's box is created, rather than cloning a prebuilt snapshot. If you want fast clones of a fully prepared environment, fork a box directly with the Box API: set it up, stop it so its snapshot completes, then fork it — the clone keeps the whole filesystem.
+Template prewarming replays your seed files and bootstrap code when each session's sandbox is created, rather than cloning a prebuilt snapshot. If you want fast clones of a fully prepared environment, fork a sandbox directly with the Boat API: set it up, stop it so its snapshot completes, then fork it. The clone keeps the whole filesystem.
 
 ## Tests
 
-The test suite runs against a live Box and requires `BOX_API_KEY`:
+The test suite runs against a live Boat sandbox and requires `BOX_API_KEY`:
 
 ```bash
 cp .env.example .env   # add your BOX_API_KEY
 npm test
 ```
 
-It covers command execution and `/workspace` path resolution, text/binary file read/write/slice/remove, `spawn()` streaming and exit codes, reconnecting to an existing box, and network-policy handling.
+It covers command execution and `/workspace` path resolution, text/binary file read/write/slice/remove, `spawn()` streaming and exit codes, reconnecting to an existing sandbox, and network-policy handling.
 
 ## Publishing
 
